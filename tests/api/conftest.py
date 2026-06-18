@@ -4,10 +4,15 @@ Fixtures compartilhadas pelos testes de API.
 A fixture `qa_company` roda o seed uma vez por sessão pytest, faz login via
 POST /login e disponibiliza credenciais + cliente HTTP autenticado para todos
 os testes que dependam dela.
+
+O hook pytest_runtest_makereport grava falhas em JSONL para consolidação
+posterior via reports/consolidar_relatorio.py.
 """
 
+import json
 import os
 import sys
+from datetime import date, datetime
 
 import pytest
 import requests
@@ -22,10 +27,13 @@ if _api_path and os.path.isdir(_api_path) and _api_path not in sys.path:
     sys.path.insert(0, _api_path)
 
 
-# URL base da API — sobrescrita via variável de ambiente para facilitar
-# apontar para localhost em dev
 API_BASE_URL = os.environ.get("API_BASE_URL", "https://api.svfinance.com.br/api").rstrip("/")
 
+_REPO_ROOT   = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+_REPORTS_DIR = os.path.join(_REPO_ROOT, "reports")
+
+
+# ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="session")
 def qa_company():
@@ -43,9 +51,7 @@ def qa_company():
     do script cleanup_qa_companies.py (empresas >7 dias são removidas).
     """
     from app import create_app
-    from app.extensions import db
 
-    # Importa a função de seed — evita duplicar a lógica de criação aqui
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
     from seed.seed_qa_company import criar_empresa_qa
 
@@ -53,8 +59,7 @@ def qa_company():
     with flask_app.app_context():
         credenciais = criar_empresa_qa()
 
-    # Login via API para obter o JWT — valida que a empresa criada consegue
-    # autenticar de fato (smoke test implícito do seed)
+    # Login via API — smoke test implícito do seed
     resp = requests.post(
         f"{API_BASE_URL}/login",
         json={
@@ -71,7 +76,6 @@ def qa_company():
 
     token = resp.json()["token"]
 
-    # Session com Authorization pré-configurada para todos os testes
     session = requests.Session()
     session.headers.update({"Authorization": f"Bearer {token}"})
     session.base_url = API_BASE_URL  # tipo: ignore[attr-defined]
@@ -96,3 +100,63 @@ def api(qa_company):
 def base_url():
     """URL base da API para uso em testes que precisam montar URLs manualmente."""
     return API_BASE_URL
+
+
+# ── Hook de captura de falhas ─────────────────────────────────────────────────
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """Grava falhas em reports/<data>/falhas.jsonl para consolidação posterior."""
+    outcome = yield
+    rep = outcome.get_result()
+
+    # Captura falhas de call (bug real) e de setup (fixture/infraestrutura)
+    if rep.when not in ("call", "setup") or not rep.failed:
+        return
+
+    hoje = date.today().isoformat()
+    pasta = os.path.join(_REPORTS_DIR, hoje)
+    os.makedirs(pasta, exist_ok=True)
+
+    # "test_clients.py" → "clients"
+    nome_arquivo = os.path.basename(str(item.fspath))
+    modulo = nome_arquivo.removeprefix("test_").removesuffix(".py")
+
+    # Primeira linha da docstring como resultado esperado (convenção nos testes)
+    resultado_esperado = None
+    fn = getattr(item, "function", None)
+    if fn and fn.__doc__:
+        primeira = fn.__doc__.strip().splitlines()[0]
+        if primeira:
+            resultado_esperado = primeira
+
+    # company_id da fixture se disponível no contexto do teste
+    company_id_usado = None
+    try:
+        qa = item.funcargs.get("qa_company")
+        if qa:
+            company_id_usado = qa.get("company_id")
+    except Exception:
+        pass
+
+    # Última linha não-vazia do traceback como mensagem de erro resumida
+    erro_str = str(rep.longrepr)
+    linhas = [l.strip() for l in erro_str.splitlines() if l.strip()]
+    erro = linhas[-1][:300] if linhas else erro_str[:300]
+
+    entrada: dict = {
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "modulo":    modulo,
+        "cenario":   item.name,
+        "erro":      erro,
+        # "setup" → falha na fixture (infraestrutura); "execucao" → falha no corpo do teste
+        "fase":      "setup" if rep.when == "setup" else "execucao",
+    }
+    if resultado_esperado:
+        entrada["resultado_esperado"] = resultado_esperado
+    if company_id_usado is not None:
+        entrada["company_id_usado"] = company_id_usado
+
+    arquivo = os.path.join(pasta, "falhas.jsonl")
+    with open(arquivo, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entrada, ensure_ascii=False) + "\n")

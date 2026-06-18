@@ -14,6 +14,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1, // sequencial — testes E2E compartilham estado da empresa QA
 
+  // Screenshots, traces e vídeos vão para test-results/ na raiz do repo.
+  // O workflow do GitHub Actions sobe essa pasta como artifact.
+  outputDir: path.resolve(__dirname, "../../test-results"),
+
   reporter: [
     ["list"],
     [
@@ -22,7 +26,7 @@ export default defineConfig({
         outputFolder: path.resolve(
           __dirname,
           "../../reports",
-          new Date().toISOString().slice(0, 10), // "2026-06-17"
+          new Date().toISOString().slice(0, 10),
           "playwright"
         ),
         open: "never",
@@ -31,13 +35,13 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL:           BASE_URL,
-    headless:          true,
-    screenshot:        "only-on-failure",
-    video:             "retain-on-failure",
-    trace:             "retain-on-failure",
-    locale:            "pt-BR",
-    timezoneId:        "America/Sao_Paulo",
+    baseURL:      BASE_URL,
+    headless:     true,
+    screenshot:   "only-on-failure",
+    video:        "retain-on-failure",
+    trace:        "on-first-retry",   // grava trace apenas na primeira retry (CI usa retries: 2)
+    locale:       "pt-BR",
+    timezoneId:   "America/Sao_Paulo",
   },
 
   projects: [

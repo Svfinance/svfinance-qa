@@ -1,0 +1,104 @@
+# qa-scheduled.yml — Roda a suite de QA a cada 6 horas e ao disparo manual.
+#
+# Secrets necessários (configurar em GitHub → Settings → Secrets and variables → Actions):
+#   DATABASE_URL    — Supabase Transaction Pooler URL (copiado do svfinance-api/.env)
+#   SECRET_KEY      — Flask SECRET_KEY
+#   JWT_SECRET_KEY  — Flask JWT_SECRET_KEY
+#   QA_PASSWORD     — Senha do usuário QA criado pelo seed
+#   API_BASE_URL    — URL base da API (ex: https://api.svfinance.com.br/api)
+#   GH_PAT          — Personal Access Token com acesso de leitura ao svfinance-api (repo privado)
+#
+# Commit automático de estado-qa.md: git direto com GITHUB_TOKEN (Opção A aprovada).
+
+name: QA Agendado — svfinance
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # 00:00, 06:00, 12:00, 18:00 UTC
+  workflow_dispatch:          # disparo manual via GitHub UI ou gh CLI
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout svfinance-qa
+        uses: actions/checkout@v4
+
+      # O seed importa create_app diretamente do svfinance-api (acesso ao banco
+      # via SQLAlchemy). Por isso precisamos clonar o repo do backend também.
+      - name: Checkout svfinance-api
+        uses: actions/checkout@v4
+        with:
+          repository: Svfinance/svfinance-api
+          path: svfinance-api
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Instalar dependências
+        run: |
+          pip install -r requirements.txt
+          pip install -r svfinance-api/requirements.txt
+
+      - name: Criar empresa QA no banco
+        env:
+          DATABASE_URL:       ${{ secrets.DATABASE_URL }}
+          SECRET_KEY:         ${{ secrets.SECRET_KEY }}
+          JWT_SECRET_KEY:     ${{ secrets.JWT_SECRET_KEY }}
+          QA_PASSWORD:        ${{ secrets.QA_PASSWORD }}
+          SVFINANCE_API_PATH: ${{ github.workspace }}/svfinance-api
+          DEV_MODE:           "False"
+        run: python seed/seed_qa_company.py
+
+      - name: Rodar testes de API
+        env:
+          DATABASE_URL:       ${{ secrets.DATABASE_URL }}
+          SECRET_KEY:         ${{ secrets.SECRET_KEY }}
+          JWT_SECRET_KEY:     ${{ secrets.JWT_SECRET_KEY }}
+          QA_PASSWORD:        ${{ secrets.QA_PASSWORD }}
+          API_BASE_URL:       ${{ secrets.API_BASE_URL }}
+          SVFINANCE_API_PATH: ${{ github.workspace }}/svfinance-api
+          DEV_MODE:           "False"
+        run: |
+          mkdir -p reports/$(date +%Y-%m-%d)
+          pytest tests/api/ -v \
+            --tb=short \
+            --continue-on-collection-errors \
+            2>&1 | tee reports/$(date +%Y-%m-%d)/pytest-output.txt
+        # continue-on-error garante que o consolidador rode mesmo com falhas nos testes
+        continue-on-error: true
+
+      - name: Consolidar relatório e atualizar estado-qa.md
+        run: python reports/consolidar_relatorio.py
+
+      # === Commit automático de estado-qa.md ===
+      # Ordem: commit local → pull --rebase (absorve pushes concorrentes) → push.
+      # Sem GPG: commits de bot em CI não são assinados — aceitável sem branch protection.
+      - name: Commitar e publicar estado-qa.md atualizado
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add org-ia/estado-qa.md
+          if git diff --staged --quiet; then
+            echo "Nenhuma alteração em estado-qa.md — nada a commitar."
+          else
+            git commit -m "docs(org-ia): atualiza estado-qa CI $(date +%Y-%m-%d)"
+            git pull --rebase origin main
+            git push origin main
+          fi
+
+      - name: Upload de artefatos (JSONL, logs, test-results do Playwright)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-results-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            reports/
+            test-results/
+          retention-days: 7
+          if-no-files-found: warn
