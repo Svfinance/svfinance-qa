@@ -1,0 +1,8 @@
+# Testes de API
+pytest>=8.3.0
+pytest-playwright>=0.5.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Playwright (runtime Python — o binário é instalado via `playwright install`)
+playwright>=1.44.0

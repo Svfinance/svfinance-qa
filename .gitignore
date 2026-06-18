@@ -1,0 +1,26 @@
+# Ambiente Python
+.env
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Node / Playwright
+node_modules/
+playwright-report/
+test-results/
+.playwright/
+
+# Relatórios gerados — manter a pasta, ignorar o conteúdo
+reports/*/
+
+# Credenciais da última execução do seed (contém senha em texto plano)
+.qa_session.json
+
+# IDEs
+.idea/
+.vscode/
+*.swp
