@@ -93,7 +93,9 @@ python seed/seed_qa_company.py
 ### 3. Rodar testes de API
 
 ```bash
-pytest tests/api/ -v
+# O executor deve usar o venv do svfinance-api (que tem Flask + SQLAlchemy).
+# O venv local do svfinance-qa NÃO tem Flask — não usar para rodar pytest.
+$SVFINANCE_API_PATH/venv/bin/python -m pytest tests/api/ -v
 ```
 
 ### 4. Limpar empresas antigas

@@ -42,12 +42,34 @@ export default defineConfig({
     trace:        "on-first-retry",   // grava trace apenas na primeira retry (CI usa retries: 2)
     locale:       "pt-BR",
     timezoneId:   "America/Sao_Paulo",
+    // Flags necessárias para rodar no WSL2 sem sandbox de usuário
+    launchOptions: {
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--disable-software-rasterizer",
+        "--single-process",
+      ],
+    },
   },
 
   projects: [
     {
-      name:  "chromium",
-      use:   { ...devices["Desktop Chrome"] },
+      name: "chromium",
+      use:  { ...devices["Desktop Chrome"] },
+      testMatch: ["**/smoke/**/*.spec.ts", "**/desktop/**/*.spec.ts"],
+    },
+    {
+      name: "mobile-chrome",
+      use:  { ...devices["Pixel 5"], viewport: { width: 375, height: 812 } },
+      testMatch: ["**/smoke/**/*.spec.ts", "**/mobile/**/*.spec.ts"],
+    },
+    {
+      name: "tablet-chrome",
+      use:  { ...devices["iPad (gen 7)"], viewport: { width: 768, height: 1024 } },
+      testMatch: ["**/tablet/**/*.spec.ts"],
     },
   ],
 });
