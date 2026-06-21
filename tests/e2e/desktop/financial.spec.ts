@@ -103,10 +103,10 @@ test.describe("Financeiro — Desktop", () => {
   });
 
   test("dashboard financeiro exibe cards de saldo", async ({ page }) => {
-    // Verifica que existe algum card de saldo (Saldo, Total, Receitas, Despesas)
-    const cards = page.locator(
-      'text=Saldo, text=Receitas, text=Despesas, text=Entradas, text=Saídas'
-    );
-    await expect(cards.first()).toBeVisible({ timeout: 10_000 });
+    // UI exibe cards: "TOTAL ENTRADAS", "TOTAL SAÍDAS", "SALDO DO PERÍODO"
+    // Nota: locator "text=X, text=Y" não funciona no Playwright (BUG-001) — usar :text()
+    await expect(
+      page.locator(':text("TOTAL ENTRADAS"), :text("TOTAL SAÍDAS"), :text("SALDO DO PERÍODO")').first()
+    ).toBeVisible({ timeout: 10_000 });
   });
 });

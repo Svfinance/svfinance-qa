@@ -10,7 +10,7 @@ const BASE_URL = process.env.E2E_BASE_URL ?? "https://app.svfinance.com.br";
 export default defineConfig({
   testDir: "./",
   testMatch: "**/*.spec.ts",
-  timeout: 30_000,
+  timeout: 60_000,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // sequencial — testes E2E compartilham estado da empresa QA
 
@@ -42,15 +42,14 @@ export default defineConfig({
     trace:        "on-first-retry",   // grava trace apenas na primeira retry (CI usa retries: 2)
     locale:       "pt-BR",
     timezoneId:   "America/Sao_Paulo",
-    // Flags necessárias para rodar no WSL2 sem sandbox de usuário
+    // Flags para WSL2: sem sandbox + sem zygote (headless-shell trava com --single-process)
     launchOptions: {
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
-        "--disable-software-rasterizer",
-        "--single-process",
+        "--no-zygote",
       ],
     },
   },

@@ -20,8 +20,11 @@ test.describe("Auth — Desktop", () => {
   test("login válido redireciona para dashboard", async ({ page }) => {
     const { email, password } = getQaSession();
 
-    await page.goto("/");
-    await page.waitForSelector('input[type="email"]', { timeout: 15_000 });
+    // domcontentloaded + 1500ms de espera evita race condition de hidratação React
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1_500);
+    await page.click('text=Fazer login');
+    await page.waitForSelector('input[type="email"]', { timeout: 10_000 });
 
     await page.fill('input[type="email"]',    email);
     await page.fill('input[type="password"]', password);
@@ -34,8 +37,10 @@ test.describe("Auth — Desktop", () => {
   test("login com senha errada exibe mensagem de erro", async ({ page }) => {
     const { email } = getQaSession();
 
-    await page.goto("/");
-    await page.waitForSelector('input[type="email"]', { timeout: 15_000 });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(1_500);
+    await page.click('text=Fazer login');
+    await page.waitForSelector('input[type="email"]', { timeout: 10_000 });
 
     await page.fill('input[type="email"]',    email);
     await page.fill('input[type="password"]', "senhaerrada_qa_teste");
@@ -49,28 +54,21 @@ test.describe("Auth — Desktop", () => {
       (await page.locator("text=erro").first().isVisible().catch(() => false));
 
     expect(erroVisible).toBe(true);
-    // Não deve ter redirecionado
     expect(page.url()).not.toContain("/dashboard");
   });
 
-  test("logout redireciona para tela de login", async ({ page }) => {
-    const { email, password } = getQaSession();
+  test("logout retorna para landing page", async ({ page }) => {
+    // Usa loginQa (já corrigido com domcontentloaded + wait)
+    await import("../helpers/auth").then(({ loginQa }) => loginQa(page));
 
-    // Faz login
-    await page.goto("/");
-    await page.waitForSelector('input[type="email"]');
-    await page.fill('input[type="email"]',    email);
-    await page.fill('input[type="password"]', password);
-    await page.click('button:has-text("ENTRAR")');
-    await page.waitForURL("**/dashboard", { timeout: 20_000 });
+    // "Sair" é um <div> com onclick na sidebar (não um <button>)
+    const sair = page.locator('text=Sair').first();
+    await sair.waitFor({ state: "visible", timeout: 10_000 });
+    await sair.click();
 
-    // Clica em Sair
-    const sairBtn = page.locator('button:has-text("Sair")').first();
-    await sairBtn.waitFor({ state: "visible", timeout: 10_000 });
-    await sairBtn.click();
-
-    // Aguarda voltar para login
-    await expect(page.locator('button:has-text("ENTRAR")').first()).toBeVisible({ timeout: 10_000 });
+    // Após logout: retorna à landing page
+    await page.waitForURL("**/", { timeout: 10_000 });
+    await expect(page.locator('text=Fazer login').first()).toBeVisible({ timeout: 8_000 });
   });
 
   test("acessar /dashboard sem token redireciona para login", async ({ page }) => {

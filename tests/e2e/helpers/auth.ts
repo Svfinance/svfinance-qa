@@ -34,9 +34,14 @@ export function getQaSession(): QaSession {
 export async function loginQa(page: Page): Promise<void> {
   const { email, password } = getQaSession();
 
-  await page.goto("/");
-  // Aguarda o formulário de login aparecer
-  await page.waitForSelector('input[type="email"]', { timeout: 15_000 });
+  // domcontentloaded é obrigatório — com "load" padrão o React ainda não hidratou
+  // e o onClick do botão "Fazer login" não dispara o formulário
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(1_500); // aguarda hidratação React
+
+  await page.waitForSelector('text=Fazer login', { timeout: 10_000 });
+  await page.click('text=Fazer login');
+  await page.waitForSelector('input[type="email"]', { timeout: 10_000 });
 
   await page.fill('input[type="email"]',    email);
   await page.fill('input[type="password"]', password);
@@ -51,6 +56,7 @@ export async function loginQa(page: Page): Promise<void> {
  * Aguarda o network estar idle antes de retornar.
  */
 export async function gotoPage(page: Page, path: string): Promise<void> {
-  await page.goto(path);
-  await page.waitForLoadState("networkidle", { timeout: 15_000 });
+  await page.goto(path, { waitUntil: "domcontentloaded" });
+  // networkidle pode nunca ser atingido em produção (WebSockets, polling) — não bloqueia
+  await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
 }

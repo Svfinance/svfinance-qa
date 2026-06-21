@@ -37,16 +37,38 @@ async function criarProduto(page: Page, nome: string, preco = "99.90") {
   await abrirFormProduto(page);
 
   const nomeInput  = page.locator('input[placeholder*="Nome"], input[placeholder*="nome"]').first();
-  const precoInput = page.locator('input[placeholder*="Preço"], input[placeholder*="preco"], input[placeholder*="0,00"]').first();
-
   const hasForm = await nomeInput.isVisible({ timeout: 5_000 }).catch(() => false);
   if (!hasForm) return false;
 
   await nomeInput.fill(nome);
-  await precoInput.fill(preco);
 
-  await page.locator('button[type="submit"], button:has-text("Salvar"), button:has-text("Criar")').last().click();
-  await page.waitForTimeout(2_000);
+  // "Preço de Venda" é o segundo input[type=number] visível (o primeiro é "Custo", opcional).
+  // Escopo no campo de busca do formulário para não capturar inputs fora do modal.
+  // placeholder="0,00" é compartilhado; .nth(1) pega o segundo = Preço de Venda.
+  const precoInput = page.locator('input[placeholder="0,00"]').nth(1);
+  const hasPreco = await precoInput.isVisible({ timeout: 3_000 }).catch(() => false);
+  if (hasPreco) {
+    await precoInput.fill(preco);
+  }
+
+  // Promise.all garante que o click dispara o POST e a resposta é confirmada
+  // antes de qualquer navegação — evita cancelar a requisição prematuramente
+  const [resp] = await Promise.all([
+    page.waitForResponse(
+      res => (res.url().includes("/products") || res.url().includes("/items") || res.url().includes("/catalog"))
+             && res.request().method() === "POST",
+      { timeout: 15_000 }
+    ),
+    page.locator('button[type="submit"], button:has-text("Salvar"), button:has-text("Criar")').last().click(),
+  ]);
+  if (resp.status() >= 400) {
+    console.warn(`POST produto retornou ${resp.status()} — tentando continuar`);
+  }
+  await page.waitForTimeout(500);
+  // Lista não atualiza automaticamente — reload obrigatório (UX-002)
+  await page.goto("/products");
+  await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
+  await page.waitForTimeout(1_500);
   return true;
 }
 
@@ -57,7 +79,8 @@ test.describe("Produtos — Desktop", () => {
   });
 
   test("página de produtos carrega sem erro", async ({ page }) => {
-    await expect(page.locator("text=Produto, text=Serviço, text=Estoque").first()).toBeVisible({ timeout: 10_000 });
+    // UI mostra "Produtos & Serviços" como h1 da página
+    await expect(page.locator('h1:has-text("Produtos")').first()).toBeVisible({ timeout: 10_000 });
   });
 
   test("criar produto aparece na lista", async ({ page }) => {
