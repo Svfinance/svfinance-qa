@@ -46,6 +46,7 @@ jobs:
           pip install -r svfinance-api/requirements.txt
 
       - name: Criar empresa QA no banco
+        id: seed
         env:
           DATABASE_URL:       ${{ secrets.DATABASE_URL }}
           SECRET_KEY:         ${{ secrets.SECRET_KEY }}
@@ -73,21 +74,45 @@ jobs:
         # continue-on-error garante que o consolidador rode mesmo com falhas nos testes
         continue-on-error: true
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Instalar dependências npm
+        run: npm ci
+
+      - name: Instalar Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Rodar testes E2E
+        env:
+          QA_COMPANY_ID: ${{ steps.seed.outputs.qa_company_id }}
+          E2E_BASE_URL:  https://app.svfinance.com.br
+        run: npx playwright test --config=tests/e2e/playwright.config.ts
+        continue-on-error: true
+
       - name: Consolidar relatório e atualizar estado-qa.md
         run: python reports/consolidar_relatorio.py
 
       # === Commit automático de estado-qa.md ===
       # Ordem: commit local → pull --rebase (absorve pushes concorrentes) → push.
       # Sem GPG: commits de bot em CI não são assinados — aceitável sem branch protection.
+      - name: Gerar relatório de bugs ativos
+        run: python reports/gerar_relatorio_bugs.py
+
       - name: Commitar e publicar estado-qa.md atualizado
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add org-ia/estado-qa.md
+          DATA=$(date +%Y-%m-%d)
+          [ -f "reports/$DATA/RELATORIO-BUGS-PRONTOS.md" ] && git add "reports/$DATA/RELATORIO-BUGS-PRONTOS.md" || true
           if git diff --staged --quiet; then
-            echo "Nenhuma alteração em estado-qa.md — nada a commitar."
+            echo "Nenhuma alteração — nada a commitar."
           else
-            git commit -m "docs(org-ia): atualiza estado-qa CI $(date +%Y-%m-%d)"
+            git commit -m "docs(org-ia): atualiza estado-qa e relatório CI $(date +%Y-%m-%d)"
             git pull --rebase origin main
             git push origin main
           fi

@@ -172,10 +172,12 @@ test.describe("Clientes — Desktop", () => {
     await page.waitForTimeout(1_500);
     // Busca pelo TS (evita problemas com '[' na string de busca)
     await busca.fill(String(TS));
-    await page.waitForTimeout(1_000);
-
-    const aindaVisivel = await page.locator(`tr.cl-row:has-text("${nome}")`).isVisible().catch(() => false);
-    expect(aindaVisivel).toBe(false);
+    await page.waitForFunction(
+      (nomeAlvo) => !Array.from(document.querySelectorAll('tr.cl-row'))
+        .some(r => r.textContent?.includes(nomeAlvo)),
+      nome,
+      { timeout: 10_000 }
+    );
   });
 
   test("deletar cliente COM OS vinculada exibe erro", async ({ page }) => {

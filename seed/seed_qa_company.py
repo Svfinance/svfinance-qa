@@ -110,6 +110,15 @@ def main():
     with open(_SESSION_FILE, "w") as f:
         json.dump(credenciais, f, indent=2)
 
+    if os.environ.get("CI") == "true":
+        github_output = os.environ.get("GITHUB_OUTPUT", "")
+        if github_output:
+            with open(github_output, "a", encoding="utf-8") as gh:
+                gh.write(f"qa_email={credenciais['email']}\n")
+                gh.write(f"qa_password={credenciais['password']}\n")
+                gh.write(f"qa_company_id={credenciais['company_id']}\n")
+            print("Credenciais gravadas em $GITHUB_OUTPUT.")
+
     print(f"\nEmpresa QA criada. Credenciais salvas em: {_SESSION_FILE}")
     print(f"  company_id : {credenciais['company_id']}")
     print(f"  company    : {credenciais['company_name']}")

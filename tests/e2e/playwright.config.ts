@@ -32,6 +32,7 @@ export default defineConfig({
         open: "never",
       },
     ],
+    ["./reporters/jsonl-reporter.ts"],
   ],
 
   use: {

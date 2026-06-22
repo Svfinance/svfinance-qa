@@ -16,6 +16,8 @@ test-results/
 
 # Relatórios gerados — manter a pasta, ignorar o conteúdo
 reports/*/
+# Exceto o relatório de bugs — commitado para rastreabilidade
+!reports/*/RELATORIO-BUGS-PRONTOS.md
 
 # Credenciais da última execução do seed (contém senha em texto plano)
 .qa_session.json
