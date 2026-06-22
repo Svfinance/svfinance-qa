@@ -32,28 +32,35 @@ Ele responde: o que está pendente, o que já foi tentado, e o que falta investi
 
 ## Última execução
 
-**2026-06-20 — suíte E2E desktop contra produção**
-- Resultado: 9 passaram | 9 falharam | 7 pulados
+**2026-06-21 — suíte E2E desktop contra produção (após commit 0113a27)**
+- Resultado: 12 passaram | 5 falharam | 8 pulados
 - Config: `--config=tests/e2e/playwright.config.ts`, `workers: 1`, sem retries
-- Log completo: `~/.local/share/rtk/tee/1781914334_playwright.log`
+- Log completo: `~/.local/share/rtk/tee/1782059976_playwright.log`
 
 | Teste | Status | Causa raiz |
 |---|---|---|
 | Auth — todos (4) | ✅ | — |
 | Contas — carrega | ✅ | — |
 | Financeiro — transações carrega | ✅ | — |
+| Financeiro — cards de saldo | ✅ | BUG-001 resolvido pelo commit 0113a27 |
 | OS — lista sem erros | ✅ | — |
 | Clientes — criar | ✅ | — |
 | Clientes — validação | ✅ | — |
-| Clientes — buscar | ❌ | criarCliente falhou silenciosamente (total permanece 22) |
-| Clientes — editar | ❌ | edit não salvou (nome original permanece no DB) |
-| Clientes — deletar | ❌ | modal de confirmação aberto no screenshot — confirm não disparou |
-| Clientes — COM OS | ❌ | gotoPage atingiu timeout de networkidle (15 s) |
-| Financeiro — cards de saldo | ❌ | locator `"text=X, text=Y"` não funciona em Playwright (CSS OR inválido) |
-| Produtos — todos (4) | ❌ | smoke: mesmo bug de locator; criar/buscar/excluir: sem reload após criação |
+| Clientes — buscar | ✅ | BUG-002 resolvido pelo commit 0113a27 |
+| Produtos — smoke | ✅ | resolvido (locator h1:has-text) |
+| Clientes — editar | ❌ | BUG-003: `fill()` não dispara React onChange — usa nome original no PUT |
+| Clientes — deletar | ❌ | BUG-004: DELETE executa mas cliente errado pode ter sido removido |
+| Produtos — criar | ❌ | `waitForResponse` timeout: URL `/products`/`/items`/`/catalog` não bate com endpoint real |
+| Produtos — buscar | ❌ | idem — depende de criarProduto que falha |
+| Produtos — excluir | ❌ | idem — depende de criarProduto que falha |
 | Contas — criar/vencida/pagar (3) | ⏭️ | skipped intencionalmente (seletores pendentes) |
 | Financeiro — receita/despesa (2) | ⏭️ | skipped intencionalmente |
 | OS — criar/filtrar (2) | ⏭️ | skipped intencionalmente |
+| Clientes — COM OS (1) | ⏭️ | skipped intencionalmente |
+
+### Execução anterior (2026-06-20)
+- Resultado: 9 passaram | 9 falharam | 7 pulados
+- Log: `~/.local/share/rtk/tee/1781914334_playwright.log`
 
 ---
 
@@ -81,16 +88,14 @@ Ele responde: o que está pendente, o que já foi tentado, e o que falta investi
 - **Resultado esperado:** locator com OR entre seletores de texto
 - **Resultado obtido:** nenhum elemento encontrado (timeout) mesmo com os textos visíveis na página
 - **Causa:** `text=X, text=Y` é interpretado como CSS onde `text=` não é pseudo-classe válida. A sintaxe correta é `:text("X"), :text("Y")` ou `page.locator('text=X').or(...)`.
-- **Status:** CORRIGIDO (fix em andamento nesta sessão)
+- **Status:** CORRIGIDO — resolvido pelo commit 0113a27 do svfinance-app (ambos os testes passam agora)
 
 ### BUG-002 — criarCliente falha silenciosamente em testes sequenciais
 - **Data:** 2026-06-20
 - **Cenário:** teste "buscar cliente pelo nome" (segundo teste de clients.spec.ts)
 - **Resultado esperado:** `[QA] E2E Busca {TS}` criado e visível após reload
 - **Resultado obtido:** "Total de Clientes" permanece em 22 (sem incremento), cliente não encontrado
-- **Evidência:** screenshot `test-results/desktop-clients-Clientes-—-6d799-*/test-failed-1.png`
-- **Status:** EM INVESTIGAÇÃO — hipótese: form fecha por estado React sem disparar API call (possível race condition com o segundo teste do mesmo contexto)
-- **Hipótese:** o `waitForSelector({ state: "hidden" })` pode completar por outra razão que não o sucesso da API (ex: React reseta o formulário em caso de erro)
+- **Status:** CORRIGIDO — resolvido pelo commit 0113a27 do svfinance-app (fetchClients atualiza lista corretamente após criação)
 
 ### BUG-003 — Edit de cliente não persiste (nome original permanece no DB)
 - **Data:** 2026-06-20
@@ -98,15 +103,19 @@ Ele responde: o que está pendente, o que já foi tentado, e o que falta investi
 - **Resultado esperado:** nome editado visível após reload
 - **Resultado obtido:** nome original permanece, screenshot confirma `[QA] E2E Editar {TS}` (não `[QA] E2E Editado`)
 - **Evidência:** screenshot `test-results/desktop-clients-Clientes-—-eb91f-*/test-failed-1.png`
-- **Status:** EM INVESTIGAÇÃO — hipótese: `page.fill()` não dispara React `onChange` em input com valor pré-existente (input controlado pelo React)
+- **Causa confirmada:** linha 121 usa `fill()` mas o form de edição usa input controlado pelo React com valor pré-existente — `fill()` substitui o DOM mas NÃO dispara `onChange` do React. O `criarCliente()` usa corretamente `setReactInputValue()` (linha 51), mas o fluxo de edição não. O `waitForResponse` intercepta o PUT (que de fato retorna < 400), mas o payload vai com o nome original porque o React state nunca foi atualizado.
+- **Status:** CAUSA CONFIRMADA — aguardando aprovação para aplicar fix (substituir `fill()` por `setReactInputValue()` na linha 121)
 
-### BUG-004 — Confirmação de delete não executada (modal permanece aberto)
-- **Data:** 2026-06-20
+### BUG-004 — Delete executa mas cliente ainda visível após reload
+- **Data:** 2026-06-20 / atualizado 2026-06-21
 - **Cenário:** teste "deletar cliente sem vínculo some da lista"
-- **Resultado esperado:** cliente removido após clicar "Excluir" no modal
-- **Resultado obtido:** modal ainda aberto no screenshot de falha; `aindaVisivel = true`
+- **Resultado esperado:** cliente removido após confirmar no modal
+- **Resultado obtido:** `aindaVisivel = true` após reload + busca pelo TS
 - **Evidência:** screenshot `test-results/desktop-clients-Clientes-—-0821f-*/test-failed-1.png`
-- **Status:** EM INVESTIGAÇÃO — hipótese: `page.locator('button:has-text("Excluir")').last()` não aguarda o modal aparecer antes de clicar; necessita `waitFor` explícito no modal
+- **O que se sabe:** o `waitForResponse` para DELETE `/clients/\d+` COMPLETOU sem timeout e com status < 400 (o teste não falha na linha 168). Ou seja: um DELETE foi executado com sucesso. Mas o cliente `[QA] E2E Deletar {TS}` ainda aparece na lista.
+- **Hipótese (não confirmada):** o DELETE pode ter deletado outro cliente com o mesmo TS (Criar, Busca ou Editar). O modal pode estar mapeando o ID errado via estado React.
+- **O que falta para confirmar:** logar `delResp.url()` para ver qual client_id foi deletado.
+- **Status:** EM INVESTIGAÇÃO — diagnóstico incompleto, aguardando instrução para adicionar log diagnóstico
 
 ---
 

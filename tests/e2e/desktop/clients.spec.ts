@@ -115,10 +115,9 @@ test.describe("Clientes — Desktop", () => {
     await editBtn.click();
     await page.waitForSelector('input[placeholder="Nome do cliente"]', { timeout: 5_000 });
 
-    const nomeInput = page.locator('input[placeholder="Nome do cliente"]');
-    // O form de edição pode ter comportamento diferente do form de criação
-    // Tenta fill() primeiro; se não funcionar, cair em pressSequentially (BUG-003)
-    await nomeInput.fill(nomeEditado);
+    // Form de edição usa input controlado pelo React com valor pré-existente.
+    // fill() substitui o DOM mas não dispara onChange — setReactInputValue é obrigatório.
+    await setReactInputValue(page, 'input[placeholder="Nome do cliente"]', nomeEditado);
     await page.waitForTimeout(300);
 
     // waitForResponse para PUT garante que o backend confirmou a atualização
