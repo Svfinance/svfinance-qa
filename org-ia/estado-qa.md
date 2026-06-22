@@ -33,25 +33,9 @@ Ele responde: o que está pendente, o que já foi tentado, e o que falta investi
 ## Última execução
 
 **Data:** 2026-06-22  
-**Resultado:** 78 falha(s) total — 78 falha(s) em teste(s) — 23 BUG(s) novo(s), 55 duplicata(s)  
+**Resultado:** 78 falha(s) total — 78 falha(s) em teste(s) — 0 BUG(s) novo(s), 78 duplicata(s)  
 **Arquivo:** reports/2026-06-22/falhas.jsonl
 
-
-## Achados de UX (comportamento da aplicação)
-
-### UX-001 — Lista de clientes não atualiza automaticamente após criar/editar
-- **Módulos afetados:** Clientes
-- **Comportamento observado:** após criar ou editar um cliente e o modal fechar, a lista exibe dados antigos. Um reload completo da página é necessário para ver o novo estado.
-- **É bug ou design?** A ser confirmado com Guilherme. O teste foi ajustado para fazer `page.goto("/clients")` + networkidle após cada operação de escrita.
-- **Impacto de UX:** o usuário precisa pressionar F5 manualmente para ver o cliente recém-criado. Pode causar duplicatas se re-submeter o formulário.
-
-### UX-002 — Lista de produtos não atualiza automaticamente após criar/editar
-- **Módulos afetados:** Produtos & Serviços (`/products`)
-- **Comportamento observado:** idêntico ao UX-001 — após criar um produto via formulário, a lista permanece com o estado anterior. O produto criado não aparece sem reload.
-- **É bug ou design?** Mesma pergunta em aberto. O teste foi ajustado com reload após submit (mesmo padrão de clientes).
-- **Impacto de UX:** usuário vê "Nenhum item encontrado" mesmo tendo acabado de criar um produto — risco alto de re-submissão acidental.
-
----
 
 ## Bugs ativos
 
