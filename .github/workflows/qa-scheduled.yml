@@ -21,6 +21,9 @@ jobs:
   qa:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout svfinance-qa
         uses: actions/checkout@v4
