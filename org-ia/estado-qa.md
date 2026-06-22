@@ -32,37 +32,10 @@ Ele responde: o que está pendente, o que já foi tentado, e o que falta investi
 
 ## Última execução
 
-**2026-06-21 — suíte E2E desktop contra produção (após commit 0113a27)**
-- Resultado: 12 passaram | 5 falharam | 8 pulados
-- Config: `--config=tests/e2e/playwright.config.ts`, `workers: 1`, sem retries
-- Log completo: `~/.local/share/rtk/tee/1782059976_playwright.log`
+**Data:** 2026-06-22  
+**Resultado:** 78 falha(s) total — 78 falha(s) em teste(s) — 23 BUG(s) novo(s), 55 duplicata(s)  
+**Arquivo:** reports/2026-06-22/falhas.jsonl
 
-| Teste | Status | Causa raiz |
-|---|---|---|
-| Auth — todos (4) | ✅ | — |
-| Contas — carrega | ✅ | — |
-| Financeiro — transações carrega | ✅ | — |
-| Financeiro — cards de saldo | ✅ | BUG-001 resolvido pelo commit 0113a27 |
-| OS — lista sem erros | ✅ | — |
-| Clientes — criar | ✅ | — |
-| Clientes — validação | ✅ | — |
-| Clientes — buscar | ✅ | BUG-002 resolvido pelo commit 0113a27 |
-| Produtos — smoke | ✅ | resolvido (locator h1:has-text) |
-| Clientes — editar | ❌ | BUG-003: `fill()` não dispara React onChange — usa nome original no PUT |
-| Clientes — deletar | ❌ | BUG-004: DELETE executa mas cliente errado pode ter sido removido |
-| Produtos — criar | ❌ | `waitForResponse` timeout: URL `/products`/`/items`/`/catalog` não bate com endpoint real |
-| Produtos — buscar | ❌ | idem — depende de criarProduto que falha |
-| Produtos — excluir | ❌ | idem — depende de criarProduto que falha |
-| Contas — criar/vencida/pagar (3) | ⏭️ | skipped intencionalmente (seletores pendentes) |
-| Financeiro — receita/despesa (2) | ⏭️ | skipped intencionalmente |
-| OS — criar/filtrar (2) | ⏭️ | skipped intencionalmente |
-| Clientes — COM OS (1) | ⏭️ | skipped intencionalmente |
-
-### Execução anterior (2026-06-20)
-- Resultado: 9 passaram | 9 falharam | 7 pulados
-- Log: `~/.local/share/rtk/tee/1781914334_playwright.log`
-
----
 
 ## Achados de UX (comportamento da aplicação)
 
@@ -117,12 +90,405 @@ Ele responde: o que está pendente, o que já foi tentado, e o que falta investi
 - **O que falta para confirmar:** logar `delResp.url()` para ver qual client_id foi deletado.
 - **Status:** EM INVESTIGAÇÃO — diagnóstico incompleto, aguardando instrução para adicionar log diagnóstico
 
+## BUG-005 — desktop/clients.spec.ts > Clientes — Desktop
+- Data/hora: 2026-06-22 17:15:21
+- Cenário testado: editar cliente mudança reflete na lista (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('tr.cl-row:has-text("[QA] E2E Editado 1782148445443")').first()
+Expected: visible
+Timeout: 8000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 8000ms[22m
+[2m  - waiting for locator('tr.cl-row:has-text("[QA] E2E Editado 1782148445443")').first()[22m
+
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 720bb1a8 -->
+
+## BUG-006 — desktop/clients.spec.ts > Clientes — Desktop
+- Data/hora: 2026-06-22 17:16:56
+- Cenário testado: deletar cliente sem vínculo some da lista (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: TimeoutError: page.waitForFunction: Timeout 10000ms exceeded.
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: c08a67ca -->
+
+## BUG-007 — desktop/products.spec.ts > Produtos — Desktop
+- Data/hora: 2026-06-22 17:20:13
+- Cenário testado: criar produto aparece na lista (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event "response"
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 203eac5d -->
+
+## BUG-008 — desktop/products.spec.ts > Produtos — Desktop
+- Data/hora: 2026-06-22 17:21:37
+- Cenário testado: campo de busca filtra produto por nome (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event "response"
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 182b5a57 -->
+
+## BUG-009 — desktop/products.spec.ts > Produtos — Desktop
+- Data/hora: 2026-06-22 17:22:59
+- Cenário testado: excluir produto some da lista (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event "response"
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: ff15e213 -->
+
+## BUG-010 — smoke/smoke.spec.ts > Smoke — Fluxo principal
+- Data/hora: 2026-06-22 17:24:19
+- Cenário testado: criar cliente → aparece na lista (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('text=[QA] Smoke Cliente 1782149035134').first()
+Expected: visible
+Timeout: 10000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 10000ms[22m
+[2m  - waiting for locator('text=[QA] Smoke Cliente 1782149035134').first()[22m
+
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 2d5b20ae -->
+
+## BUG-011 — smoke/smoke.spec.ts > Smoke — Fluxo principal
+- Data/hora: 2026-06-22 17:25:27
+- Cenário testado: criar OS vinculada ao cliente → aparece na lista (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('text=Abertas, text=Em andamento, text=Total').first()
+Expected: visible
+Timeout: 10000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 10000ms[22m
+[2m  - waiting for locator('text=Abertas, text=Em andamento, text=Total').first()[22m
+
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: f9072f57 -->
+
+## BUG-012 — smoke/smoke.spec.ts > Smoke — Fluxo principal
+- Data/hora: 2026-06-22 17:26:31
+- Cenário testado: logout redireciona para login (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('button:has-text("ENTRAR"), input[type="email"]').first()
+Expected: visible
+Timeout: 10000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 10000ms[22m
+[2m  - waiting for locator('button:has-text("ENTRAR"), input[type="email"]').first()[22m
+
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 334365a9 -->
+
+## BUG-013 — mobile/mobile-flows.spec.ts > Fluxos Mobile (375x812)
+- Data/hora: 2026-06-22 17:27:24
+- Cenário testado: login em mobile dashboard carrega sem layout quebrado (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('text=Dashboard').first()
+Expected: visible
+Timeout: 15000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 15000ms[22m
+[2m  - waiting for locator('text=Dashboard').first()[22m
+
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 6eb8f035 -->
+
+## BUG-014 — mobile/mobile-flows.spec.ts > Fluxos Mobile (375x812)
+- Data/hora: 2026-06-22 17:28:26
+- Cenário testado: dashboard financeiro em mobile cards não transbordam (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('text=Saldo, text=Receitas, text=Despesas, text=Transações').first()
+Expected: visible
+Timeout: 10000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 10000ms[22m
+[2m  - waiting for locator('text=Saldo, text=Receitas, text=Despesas, text=Transações').first()[22m
+
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 8cb70402 -->
+
+## BUG-015 — mobile/mobile-flows.spec.ts > Fluxos Mobile (375x812)
+- Data/hora: 2026-06-22 17:29:23
+- Cenário testado: criar cliente em mobile formulário funcional (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+Expected: [32mtrue[39m
+Received: [31mfalse[39m
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 28386f96 -->
+
+## BUG-016 — mobile/mobile-flows.spec.ts > Fluxos Mobile (375x812)
+- Data/hora: 2026-06-22 17:30:12
+- Cenário testado: página de OS em mobile lista carrega sem erro (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('text=Pedidos / O.S, text=Ordens, text=Total').first()
+Expected: visible
+Timeout: 10000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 10000ms[22m
+[2m  - waiting for locator('text=Pedidos / O.S, text=Ordens, text=Total').first()[22m
+
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: b30e3089 -->
+
+## BUG-017 — mobile/mobile-flows.spec.ts > Fluxos Mobile (375x812)
+- Data/hora: 2026-06-22 17:31:21
+- Cenário testado: página de transações em mobile lista carrega sem erro (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('text=Transações, text=Receitas, text=Despesas').first()
+Expected: visible
+Timeout: 10000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 10000ms[22m
+[2m  - waiting for locator('text=Transações, text=Receitas, text=Despesas').first()[22m
+
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 26e05a59 -->
+
+## BUG-018 — mobile/mobile-flows.spec.ts > Fluxos Mobile (375x812)
+- Data/hora: 2026-06-22 17:32:25
+- Cenário testado: página de contas em mobile carrega sem erro (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('text=Contas, text=Pagar, text=Receber, text=Vencimento').first()
+Expected: visible
+Timeout: 10000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 10000ms[22m
+[2m  - waiting for locator('text=Contas, text=Pagar, text=Receber, text=Vencimento').first()[22m
+
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: c9253b98 -->
+
+## BUG-019 — mobile/mobile-layout.spec.ts > Layout Mobile (375x812)
+- Data/hora: 2026-06-22 17:33:25
+- Cenário testado: login sem scroll horizontal (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
+Call log:
+[2m  - waiting for locator('input[type="email"]') to be visible[22m
+
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: d0c6015a -->
+
+## BUG-020 — smoke/smoke.spec.ts > Smoke — Fluxo principal
+- Data/hora: 2026-06-22 17:35:11
+- Cenário testado: dashboard carrega após login (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+Locator: locator('text=Dashboard').first()
+Expected: visible
+Timeout: 10000ms
+Error: element(s) not found
+
+Call log:
+[2m  - Expect "toBeVisible" with timeout 10000ms[22m
+[2m  - waiting for locator('text=Dashboard').first()[22m
+
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: e3eb7996 -->
+
+## BUG-021 — tablet/tablet-layout.spec.ts > Layout Tablet (768x1024)
+- Data/hora: 2026-06-22 17:38:56
+- Cenário testado: login sem overflow horizontal (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: browserType.launch: Executable doesn't exist at /home/runner/.cache/ms-playwright/webkit-2311/pw_run.sh
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     npx playwright install                                 ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: b411dd5f -->
+
+## BUG-022 — tablet/tablet-layout.spec.ts > Layout Tablet (768x1024)
+- Data/hora: 2026-06-22 17:38:58
+- Cenário testado: dashboard carrega sem overflow horizontal (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: browserType.launch: Executable doesn't exist at /home/runner/.cache/ms-playwright/webkit-2311/pw_run.sh
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     npx playwright install                                 ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: fd6059c7 -->
+
+## BUG-023 — tablet/tablet-layout.spec.ts > Layout Tablet (768x1024)
+- Data/hora: 2026-06-22 17:39:00
+- Cenário testado: página de clientes sem overflow horizontal (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: browserType.launch: Executable doesn't exist at /home/runner/.cache/ms-playwright/webkit-2311/pw_run.sh
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     npx playwright install                                 ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 851f0cb7 -->
+
+## BUG-024 — tablet/tablet-layout.spec.ts > Layout Tablet (768x1024)
+- Data/hora: 2026-06-22 17:39:02
+- Cenário testado: página de OS sem overflow horizontal (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: browserType.launch: Executable doesn't exist at /home/runner/.cache/ms-playwright/webkit-2311/pw_run.sh
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     npx playwright install                                 ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: f90214ce -->
+
+## BUG-025 — tablet/tablet-layout.spec.ts > Layout Tablet (768x1024)
+- Data/hora: 2026-06-22 17:39:03
+- Cenário testado: formulário de cliente usa largura adequada para tablet (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: browserType.launch: Executable doesn't exist at /home/runner/.cache/ms-playwright/webkit-2311/pw_run.sh
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     npx playwright install                                 ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 8b691ecb -->
+
+## BUG-026 — tablet/tablet-layout.spec.ts > Layout Tablet (768x1024)
+- Data/hora: 2026-06-22 17:39:05
+- Cenário testado: sidebar visível ou navegação acessível no tablet (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: browserType.launch: Executable doesn't exist at /home/runner/.cache/ms-playwright/webkit-2311/pw_run.sh
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     npx playwright install                                 ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 37da8e6f -->
+
+## BUG-027 — tablet/tablet-layout.spec.ts > Layout Tablet (768x1024)
+- Data/hora: 2026-06-22 17:39:07
+- Cenário testado: página de transações no tablet sem overflow (company_id: 70)
+- Resultado esperado: —
+- Resultado obtido: Error: browserType.launch: Executable doesn't exist at /home/runner/.cache/ms-playwright/webkit-2311/pw_run.sh
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     npx playwright install                                 ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+- Evidência: reports/2026-06-22/falhas.jsonl
+- Status: NÃO INVESTIGADO
+- Hipótese de causa (se houver): —
+<!-- falha-id: 29e08881 -->
+
 ---
 
 ## Histórico de execuções
 
 | Data | Resultado | Empresa QA usada | Observação |
 |---|---|---|---|
+| 2026-06-22 | 78 falha(s) total — 78 falha(s) em teste(s) — 23 BUG(s) novo(s), 55 duplicata(s) | — | — |
 | 2026-06-20 | 9✅ 9❌ 7⏭️ | seed QA existente | Primeira execução real contra produção |
 
 ---
