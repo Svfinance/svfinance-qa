@@ -23,7 +23,7 @@ def _campo(bloco: str, *labels: str) -> str:
     """Extrai o valor de qualquer uma das labels (bold ou plain)."""
     for label in labels:
         m = re.search(
-            rf"^- (?:\*\*)?{re.escape(label)}(?:\*\*)?:\s*(.+)$",
+            rf"^- (?:\*\*)?{re.escape(label)}(?:\*\*)?:(?:\*\*)?\s*(.+)$",
             bloco, re.MULTILINE,
         )
         if m:
@@ -43,14 +43,14 @@ def _extrair_status(bloco: str) -> str:
 def _extrair_bugs(conteudo: str) -> list[dict]:
     """Extrai blocos BUG do estado-qa.md e filtra pelos status ativos."""
     bugs = []
-    # Captura cada bloco ## BUG-NNN até o próximo ## ou ---
+    # Captura cada bloco ### BUG-NNN até o próximo ### BUG ou ---
     padrao = re.compile(
-        r"^(## BUG-\d+[^\n]*\n(?:(?!^## BUG-\d+|^---).*\n)*)",
+        r"^(### BUG-\d+[^\n]*\n(?:(?!^### BUG-\d+|^---).*\n)*)",
         re.MULTILINE,
     )
     for m in padrao.finditer(conteudo):
         bloco = m.group(1)
-        titulo = re.match(r"## (.+)", bloco)
+        titulo = re.match(r"### (.+)", bloco)
         status = _extrair_status(bloco)
         if status not in STATUS_ATIVOS:
             continue

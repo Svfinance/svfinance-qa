@@ -174,3 +174,71 @@ class TestDeletarOrder:
         assert resp.status_code == 404, (
             f"Esperado 404, obtido {resp.status_code}: {resp.text}"
         )
+
+
+class TestRegressaoDeleteOS:
+    """
+    Testes de regressão para BUG-C e BUG-D do svfinance-api.
+
+    BUG-C: DELETE de OS concluída (proxy de "faturada") deve retornar 400 com
+           mensagem clara — atualmente retorna 200 e apaga a transação financeira.
+    BUG-D: DELETE de cliente com OS vinculada deve retornar 200 e manter a OS no
+           banco — atualmente retorna 400 (ClientService bloqueia por ter orders).
+
+    Os testes test_deletar_order_concluida_retorna_400 e
+    test_deletar_cliente_com_os_retorna_200_os_mantida falharão enquanto o fix
+    não estiver em produção.
+    """
+
+    def test_deletar_order_aberta_retorna_200(self, api, base_url):
+        """DELETE /orders/<id> em ordem aberta (sem vínculos) deve retornar 200."""
+        client_id = _criar_cliente(api, base_url, "[QA] Regr Delete OS Aberta")
+        order_id  = _criar_order(api, base_url, client_id)
+        try:
+            resp = api.delete(f"{base_url}/orders/{order_id}")
+            assert resp.status_code == 200, (
+                f"Esperado 200 ao deletar OS aberta, obtido {resp.status_code}: {resp.text}"
+            )
+        finally:
+            api.delete(f"{base_url}/orders/{order_id}")
+            api.delete(f"{base_url}/clients/{client_id}")
+
+    def test_deletar_order_concluida_retorna_400(self, api, base_url):
+        """DELETE /orders/<id> em ordem concluída (status=done) deve retornar 400."""
+        client_id = _criar_cliente(api, base_url, "[QA] Regr Delete OS Concluida")
+        order_id  = _criar_order(api, base_url, client_id)
+        try:
+            # Conclui a OS — gera transaction_id (equivalente a "faturada")
+            api.patch(f"{base_url}/orders/{order_id}/status", json={"status": "done"})
+
+            resp = api.delete(f"{base_url}/orders/{order_id}")
+            assert resp.status_code == 400, (
+                f"Esperado 400 ao deletar OS concluída, obtido {resp.status_code}: {resp.text}"
+            )
+            body = resp.json()
+            assert body.get("msg"), "Response 400 deve conter 'msg' explicando o bloqueio"
+        finally:
+            # Reverte para 'open' antes de limpar (PATCH aceita status != done)
+            api.patch(f"{base_url}/orders/{order_id}/status", json={"status": "open"})
+            api.delete(f"{base_url}/orders/{order_id}")
+            api.delete(f"{base_url}/clients/{client_id}")
+
+    def test_deletar_cliente_com_os_retorna_200_os_mantida(self, api, base_url):
+        """DELETE /clients/<id> com OS vinculada deve retornar 200 e manter a OS no banco."""
+        client_id = _criar_cliente(api, base_url, "[QA] Regr Delete Cliente Com OS")
+        order_id  = _criar_order(api, base_url, client_id)
+        try:
+            resp = api.delete(f"{base_url}/clients/{client_id}")
+            assert resp.status_code == 200, (
+                f"Esperado 200 ao deletar cliente com OS vinculada, "
+                f"obtido {resp.status_code}: {resp.text}"
+            )
+            # OS deve permanecer no banco após o cliente ser removido
+            get_resp = api.get(f"{base_url}/orders/{order_id}")
+            assert get_resp.status_code == 200, (
+                f"OS {order_id} deveria permanecer após delete do cliente, "
+                f"obtido {get_resp.status_code}"
+            )
+        finally:
+            api.delete(f"{base_url}/orders/{order_id}")
+            api.delete(f"{base_url}/clients/{client_id}")

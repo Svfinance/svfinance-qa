@@ -15,7 +15,9 @@ test-results/
 .playwright/
 
 # Relatórios gerados — manter a pasta, ignorar o conteúdo
-reports/*/
+# Nota: reports/*/ ignoraria o diretório e impediria a negação abaixo de funcionar.
+# reports/*/* ignora os arquivos dentro dos subdiretórios sem ignorar os diretórios em si.
+reports/*/*
 # Exceto o relatório de bugs — commitado para rastreabilidade
 !reports/*/RELATORIO-BUGS-PRONTOS.md
 
