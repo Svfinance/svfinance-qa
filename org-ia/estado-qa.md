@@ -33,19 +33,9 @@ Ele responde: o que está pendente, o que já foi tentado, e o que falta investi
 ## Última execução
 
 **Data:** 2026-06-23  
-**Resultado:** 80 falha(s) total — 80 falha(s) em teste(s) — 2 BUG(s) novo(s), 78 duplicata(s)  
+**Resultado:** 80 falha(s) total — 80 falha(s) em teste(s) — 25 BUG(s) novo(s), 55 duplicata(s)  
 **Arquivo:** reports/2026-06-23/falhas.jsonl
 
-
-## Histórico de execuções
-
-| Data | Resultado | Empresa QA usada | Observação |
-|---|---|---|---|
-| 2026-06-23 | 80 falha(s) total — 80 falha(s) em teste(s) — 2 BUG(s) novo(s), 78 duplicata(s) | — | — |
-| 2026-06-22 | 78 falha(s) total — 78 falha(s) em teste(s) — 23 BUG(s) novo(s), 55 duplicata(s) | — | — |
-| 2026-06-20 | 9✅ 9❌ 7⏭️ | seed QA existente | Primeira execução real contra produção |
-
----
 
 ## Hipóteses em aberto
 
